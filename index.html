@@ -14,22 +14,6 @@
       font-size: 16px;
       cursor: pointer;
     }
-    #wallet-info {
-      margin-top: 20px;
-      border-top: 1px solid #ccc;
-      padding-top: 10px;
-    }
-    #wallet-info p {
-      margin: 5px 0;
-    }
-    .disconnect {
-      background: #e74c3c;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 8px 16px;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
@@ -37,16 +21,7 @@
   <p id="message">Detecting wallets...</p>
   <div id="wallet-buttons"></div>
 
-  <div id="wallet-info" style="display:none;">
-    <h3>Wallet Connected</h3>
-    <p><strong>Name:</strong> <span id="wallet-name"></span></p>
-    <p><strong>Address:</strong> <span id="wallet-address"></span></p>
-    <p><strong>Balance:</strong> <span id="wallet-balance"></span> ADA</p>
-    <button class="disconnect" id="disconnect-btn">Disconnect</button>
-  </div>
-
+  <!-- Main JS -->
   <script type="module" src="main.js"></script>
 </body>
 </html>
-
-
