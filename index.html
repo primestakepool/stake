@@ -1,50 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cardano Wallet Connect</title>
-
+  <meta charset="UTF-8">
+  <title>Cardano Staking</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f6f7fb;
-      color: #222;
-      padding: 40px;
-      text-align: center;
+      padding: 20px;
     }
-    h2 {
-      color: #0055ff;
-    }
-    button {
-      padding: 10px 16px;
-      margin: 8px;
-      border: none;
-      background: #0055ff;
-      color: #fff;
-      font-size: 15px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #003fcc;
-    }
-    #message {
-      margin: 20px 0;
+    #wallet-buttons button {
+      margin: 5px;
+      padding: 10px 20px;
       font-size: 16px;
+      cursor: pointer;
     }
   </style>
 </head>
-
 <body>
-  <h2>Delegate your ADA</h2>
+  <h1>Delegate your ADA</h1>
   <p id="message">Detecting wallets...</p>
   <div id="wallet-buttons"></div>
 
-  <!-- Main wallet script -->
+  <!-- Main JS -->
   <script type="module" src="main.js"></script>
 </body>
 </html>
-
-
-
