@@ -9,33 +9,41 @@
       color: #e6edf3;
       font-family: "Segoe UI", Arial, sans-serif;
       margin: 0;
-      padding: 0;
+      padding-top: 120px; /* space for fixed top container */
     }
 
-    .container {
-      max-width: 600px;
-      margin: 60px auto 0 auto; /* top centered with space from top */
+    /* Fixed top container */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #161b22;
+      padding: 20px 0;
       text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      z-index: 1000;
     }
 
-    h1 {
-      font-size: 2rem;
+    .top-bar h1 {
+      margin: 0;
+      font-size: 1.8rem;
       color: #58a6ff;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
-    #message {
-      font-size: 1.1rem;
-      margin-bottom: 20px;
+    .top-bar p {
+      margin: 0 0 12px 0;
       color: #c9d1d9;
+      font-size: 1rem;
     }
 
     #wallet-buttons {
       display: flex;
-      flex-wrap: wrap;
       justify-content: center;
-      gap: 12px;
-      margin-bottom: 30px;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
     }
 
     #wallet-buttons button {
@@ -43,8 +51,8 @@
       color: #fff;
       border: none;
       border-radius: 6px;
-      padding: 12px 28px;
-      font-size: 16px;
+      padding: 10px 24px;
+      font-size: 15px;
       cursor: pointer;
       transition: all 0.2s ease;
     }
@@ -54,53 +62,53 @@
       transform: scale(1.05);
     }
 
-    .delegate-btn {
+    #delegate-btn {
       background: #1f6feb;
       color: white;
       border: none;
       border-radius: 6px;
-      padding: 14px 36px;
-      font-size: 18px;
+      padding: 12px 32px;
+      font-size: 16px;
       cursor: pointer;
       transition: all 0.25s ease;
     }
 
-    .delegate-btn:hover {
+    #delegate-btn:hover {
       background: #388bfd;
       transform: scale(1.06);
     }
 
-    .footer {
-      text-align: center;
-      margin-top: 80px;
-      font-size: 0.9rem;
-      color: #8b949e;
+    /* Sample page content */
+    .content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
     }
 
-    a {
-      color: #58a6ff;
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
+    .content p {
+      font-size: 1rem;
+      line-height: 1.6;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Delegate ADA to PSP</h1>
+  <!-- Top fixed wallet + delegate section -->
+  <div class="top-bar">
+    <h1>Delegate your ADA</h1>
     <p id="message">Detecting wallets...</p>
 
-    <!-- Wallet buttons -->
+    <!-- Wallet buttons inserted dynamically -->
     <div id="wallet-buttons"></div>
 
-    <!-- Delegate button placeholder -->
-    <div id="delegate-section"></div>
+    <!-- Delegate Now button -->
+    <button id="delegate-btn">Delegate Now</button>
   </div>
 
-  <div class="footer">
-    <p>Powered by <a href="https://primestakepool.com/" target="_blank">Prime Stake Pool</a></p>
+  <!-- Page content below -->
+  <div class="content">
+    <p>Welcome to our Cardano staking page! Scroll down to see more info about your stake pool.</p>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque vehicula augue in magna consequat, vitae ullamcorper quam mattis. Sed ut neque nisi.</p>
+    <p>More content can go here...</p>
   </div>
 
   <script type="module" src="main.js"></script>
