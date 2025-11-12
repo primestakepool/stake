@@ -3,7 +3,7 @@ import { Lucid, Blockfrost } from "https://cdn.jsdelivr.net/npm/lucid-cardano@0.
 // ----------------------
 // CONFIG
 // ----------------------
-const BACKEND_PROXY = "https://wallet-proxy-pi.vercel.app/api/blockfrost-proxy";
+const BACKEND_URL = "https://wallet-proxy-five.vercel.app/api/epoch-params";
 const POOL_ID = "pool1w2duw0lk7lxjpfqjguxvtp0znhaqf8l2yvzcfd72l8fuk0h77gy";
 
 // ----------------------
@@ -20,23 +20,18 @@ let lucid, walletApi, connectedWallet;
 async function detectWallets() {
   messageEl.textContent = "Detecting wallets…";
 
-  // Synchronous check first
   if (window.cardano && Object.keys(window.cardano).length > 0) {
-    const walletNames = Object.keys(window.cardano);
-    messageEl.textContent = "Select your wallet to delegate:";
-    return walletNames;
+    return Object.keys(window.cardano);
   }
 
-  // Fallback: poll for wallet injection
+  // Poll for wallet injection (some wallets inject after page load)
   return new Promise((resolve, reject) => {
     const start = Date.now();
-    const timeout = 5000; // 5 seconds
+    const timeout = 5000;
     const interval = setInterval(() => {
       if (window.cardano && Object.keys(window.cardano).length > 0) {
         clearInterval(interval);
-        const walletNames = Object.keys(window.cardano);
-        messageEl.textContent = "Select your wallet to delegate:";
-        resolve(walletNames);
+        resolve(Object.keys(window.cardano));
       } else if (Date.now() - start > timeout) {
         clearInterval(interval);
         reject(new Error("No Cardano wallets detected. Make sure the wallet is installed and unlocked."));
@@ -51,7 +46,6 @@ async function detectWallets() {
 async function main() {
   try {
     const walletNames = await detectWallets();
-
     buttonsContainer.innerHTML = "";
 
     walletNames.forEach(name => {
@@ -62,6 +56,7 @@ async function main() {
     });
 
     console.log("Detected wallets:", walletNames);
+    messageEl.textContent = "Select your wallet to delegate:";
   } catch (err) {
     console.error(err);
     messageEl.textContent = `❌ ${err.message}`;
@@ -77,16 +72,19 @@ async function connectWallet(name) {
     walletApi = await window.cardano[name].enable();
     connectedWallet = name;
 
-    // Initialize Lucid using backend proxy (no API key exposed)
-    lucid = await Lucid.new(
-      new Blockfrost(BACKEND_PROXY, ""), 
-      "Mainnet"
-    );
+    // Fetch protocol parameters from backend (CORS-enabled)
+    const res = await fetch(BACKEND_URL);
+    const protocolParams = await res.json();
+
+    // Initialize Lucid with backend-provided protocol parameters
+    lucid = await Lucid.new(undefined, "Mainnet");
     lucid.selectWallet(walletApi);
+    lucid._protocolParameters = protocolParams; // inject backend protocol params
 
     const address = await lucid.wallet.address();
     messageEl.textContent = `✅ ${name.toUpperCase()} connected`;
     console.log("Connected wallet:", name, address);
+    console.log("Protocol params:", protocolParams);
 
     showDelegateButton(address);
   } catch (err) {
