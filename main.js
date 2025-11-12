@@ -1,123 +1,88 @@
-import { Lucid, Transaction } from "https://cdn.jsdelivr.net/npm/lucid-cardano@0.10.7/web/mod.js";
+// main.js
 
-// ----------------------------------
-// CONFIG
-// ----------------------------------
-const BACKEND_URL = "https://wallet-proxy-pi.vercel.app/api/epoch-params";
-const POOL_ID = "pool1w2duw0lk7lxjpfqjguxvtp0znhaqf8l2yvzcfd72l8fuk0h77gy"; // your pool ID
-
-// ----------------------------------
-// DOM ELEMENTS
-// ----------------------------------
-const messageEl = document.getElementById("message");
-const buttonsContainer = document.getElementById("wallet-buttons");
+import { Lucid } from "https://cdn.jsdelivr.net/npm/lucid-cardano@0.10.7/web/mod.js";
 
 let lucid;
-let walletApi;
+let wallet;
 
-// ----------------------------------
-// MAIN
-// ----------------------------------
-async function main() {
-    messageEl.textContent = "Detecting wallets…";
+// Your backend URL for epoch parameters
+const BACKEND_URL = "https://wallet-proxy-pi.vercel.app/api/epoch-params";
 
-    if (!window.cardano) {
-        messageEl.textContent = "No Cardano wallet found. Please install Nami, Yoroi, Lace, or Flint.";
-        return;
-    }
+// DOM elements
+const btn = document.getElementById("connectWalletBtn");
+const delegateBtn = document.getElementById("delegateBtn");
 
-    const walletNames = Object.keys(window.cardano);
-    if (walletNames.length === 0) {
-        messageEl.textContent = "No Cardano wallet found. Please unlock or install a wallet.";
-        return;
-    }
-
-    messageEl.textContent = "Select your wallet to delegate:";
-    buttonsContainer.innerHTML = "";
-
-    walletNames.forEach(name => {
-        const btn = document.createElement("button");
-        btn.textContent = name.toUpperCase();
-        btn.onclick = () => connectWallet(name);
-        buttonsContainer.appendChild(btn);
-    });
-
-    console.log("Detected wallets:", walletNames);
+// Helper: fetch protocol parameters from backend
+async function getProtocolParams() {
+    const res = await fetch(BACKEND_URL);
+    if (!res.ok) throw new Error("Failed to fetch protocol parameters");
+    return res.json();
 }
 
-// ----------------------------------
-// CONNECT WALLET
-// ----------------------------------
-async function connectWallet(name) {
+// Connect wallet
+async function connectWallet() {
+    // Detect wallets
+    const wallets = Object.keys(window.cardano || {});
+    console.log("Detected wallets:", wallets);
+
+    if (!window.cardano.yoroi) throw new Error("Yoroi wallet not found");
+
+    wallet = window.cardano.yoroi;
+
+    // Enable wallet
+    await wallet.enable();
+
+    // Initialize Lucid
+    lucid = await Lucid.new(
+        new Lucid.Blockfrost(wallet, "mainnet") // adjust for testnet if needed
+    );
+
+    lucid.selectWallet(wallet);
+
+    // Fetch protocol params from backend and set in Lucid
+    const protocolParams = await getProtocolParams();
+    lucid.setProtocolParams(protocolParams);
+
+    // Show connected address
+    const usedAddresses = await lucid.wallet.getUsedAddresses();
+    console.log("Connected wallet:", usedAddresses[0]);
+}
+
+// Delegate to pool
+async function delegateToPool(poolId) {
+    if (!lucid) throw new Error("Wallet not connected");
+
+    // Build and submit delegation transaction
+    const tx = await lucid.newTx()
+        .delegateTo( (await lucid.wallet.getUsedAddresses())[0], poolId )
+        .complete();
+
+    const signedTx = await tx.sign().complete();
+    const txHash = await signedTx.submit();
+
+    console.log("Delegation submitted, tx hash:", txHash);
+}
+
+// Button events
+btn.onclick = async () => {
     try {
-        messageEl.textContent = `Connecting to ${name}…`;
-        walletApi = await window.cardano[name].enable();
-
-        // Get protocol parameters from backend
-        const res = await fetch(BACKEND_URL);
-        if (!res.ok) throw new Error("Failed to fetch protocol parameters");
-        const protocolParams = await res.json();
-
-        // Initialize Lucid with protocol params from backend
-        lucid = await Lucid.new(
-            async () => protocolParams, // <-- function returning protocol params
-            "Mainnet"
-        );
-        lucid.selectWallet(walletApi);
-
-        const address = await lucid.wallet.address();
-        messageEl.textContent = `✅ ${name.toUpperCase()} connected`;
-
-        console.log("Connected wallet:", name, address);
-        console.log("Protocol params:", protocolParams);
-
-        showDelegateButton(address);
+        await connectWallet();
+        alert("Wallet connected!");
     } catch (err) {
-        console.error(err);
-        messageEl.textContent = `❌ Failed to connect ${name}: ${err.message}`;
+        console.error("Connect wallet error:", err);
+        alert("Failed to connect wallet: " + err.message);
     }
-}
+};
 
-// ----------------------------------
-// ADD "DELEGATE NOW" BUTTON
-// ----------------------------------
-function showDelegateButton(address) {
-    const delegateBtn = document.createElement("button");
-    delegateBtn.textContent = "Delegate Now";
-    delegateBtn.style.cssText = "display:block;margin-top:20px;padding:10px 25px;font-size:16px;";
-    delegateBtn.onclick = () => delegateToPool(address);
-    buttonsContainer.appendChild(delegateBtn);
-}
+delegateBtn.onclick = async () => {
+    const poolId = prompt("Enter pool ID to delegate to:");
+    if (!poolId) return;
 
-// ----------------------------------
-// DELEGATION LOGIC
-// ----------------------------------
-async function delegateToPool(address) {
     try {
-        messageEl.textContent = "Building delegation transaction…";
-
-        // Build delegation transaction
-        const tx = await lucid.newTx()
-            .delegateTo(address, POOL_ID)
-            .complete();
-
-        messageEl.textContent = "Signing transaction…";
-        const signedTx = await tx.sign().complete();
-
-        messageEl.textContent = "Submitting to network…";
-        const txHash = await signedTx.submit();
-
-        messageEl.textContent = `🎉 Delegation submitted! Tx hash: ${txHash}`;
-        console.log("Delegation transaction hash:", txHash);
+        await delegateToPool(poolId);
+        alert("Delegation submitted!");
     } catch (err) {
         console.error("Delegation error:", err);
-        messageEl.textContent = `❌ Delegation failed: ${err.message}`;
+        alert("Delegation failed: " + err.message);
     }
-}
-
-// ----------------------------------
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", main);
-} else {
-    main();
-}
+};
