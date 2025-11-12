@@ -1,6 +1,6 @@
 import { Lucid, Blockfrost } from "https://cdn.jsdelivr.net/npm/lucid-cardano@0.10.7/web/mod.js";
 
-const BACKEND_PROXY = "https://wallet-proxy-alpha.vercel.app/api/blockfrost-proxy";
+const BACKEND_PROXY = "https://wallet-proxy-pi.vercel.app/api/blockfrost-proxy";
 const POOL_ID = "pool1w2duw0lk7lxjpfqjguxvtp0znhaqf8l2yvzcfd72l8fuk0h77gy";
 
 let lucid, walletApi, connectedWallet;
