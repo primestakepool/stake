@@ -1,4 +1,4 @@
-import { Lucid } from "https://cdn.jsdelivr.net/npm/lucid-cardano@0.10.7/web/mod.js";
+import { Lucid } from "https://cdn.jsdelivr.net/npm/lucid-cardano@0.10.7/browser/mod.js";
 
 // ----------------------------------
 // CONFIG
