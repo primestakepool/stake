@@ -1,4 +1,4 @@
-import { Lucid, TransactionBuilderConfig } from "https://cdn.jsdelivr.net/npm/lucid-cardano@0.10.7/web/mod.js";
+import { Lucid, TransactionBuilderConfigBuilder } from "https://cdn.jsdelivr.net/npm/lucid-cardano@0.10.7/web/mod.js";
 
 // ----------------------------------
 // CONFIG
@@ -27,7 +27,7 @@ async function main() {
     return;
   }
 
-  const walletNames = Object.keys(window.cardano);
+  const walletNames = Object.keys(window.cardano || {});
   if (walletNames.length === 0) {
     messageEl.textContent = "No Cardano wallet found. Please unlock or install a wallet.";
     return;
@@ -56,16 +56,25 @@ async function connectWallet(name) {
     connectedWallet = name;
 
     // Fetch epoch / protocol parameters from backend
-    const res = await fetch(BACKEND_URL);
-    if (!res.ok) throw new Error(`Backend fetch failed with status ${res.status}`);
-    const protocolParams = await res.json();
+    const paramsRes = await fetch(BACKEND_URL);
+    if (!paramsRes.ok) throw new Error("Backend fetch failed");
+    const protocolParams = await paramsRes.json();
 
     // Initialize Lucid
     lucid = await Lucid.new(undefined, "Mainnet");
     lucid.selectWallet(walletApi);
 
-    // Properly inject TransactionBuilderConfig
-    const txBuilderConfig = TransactionBuilderConfig.from_json(JSON.stringify(protocolParams));
+    // Build TransactionBuilderConfig
+    const txBuilderConfig = TransactionBuilderConfigBuilder.new()
+      .fee_algo_min(protocolParams.min_fee_a)
+      .fee_algo_constant(protocolParams.min_fee_b)
+      .pool_deposit(protocolParams.pool_deposit)
+      .key_deposit(protocolParams.key_deposit)
+      .max_tx_size(protocolParams.max_tx_size)
+      .max_value_size(protocolParams.max_val_size)
+      .coins_per_utxo_word(protocolParams.coins_per_utxo_word)
+      .build();
+
     lucid._txBuilderConfig = txBuilderConfig;
 
     const address = await lucid.wallet.address();
