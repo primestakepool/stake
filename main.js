@@ -1,4 +1,3 @@
-// main.js
 const BACKEND_URL = "https://cardano-wallet-backend.vercel.app/api";
 
 let wallet = null;
@@ -9,25 +8,19 @@ const message = document.getElementById("message");
 const walletButtonsDiv = document.getElementById("wallet-buttons");
 const delegateSection = document.getElementById("delegate-section");
 
-// List of supported wallets
-const SUPPORTED_WALLETS = ["yoroi", "nami", "flint", "eternl", "gerowallet"];
+const SUPPORTED_WALLETS = Object.keys(window.cardano || {});
 
 function detectWallets() {
   walletButtonsDiv.innerHTML = "";
-  const detectedWallets = [];
 
-  SUPPORTED_WALLETS.forEach(name => {
-    if (window.cardano?.[name]) detectedWallets.push(name);
-  });
-
-  if (detectedWallets.length === 0) {
-    message.innerHTML = 'No supported wallets found. Install one of these: <a href="https://yoroi-wallet.com/">Yoroi</a>, <a href="https://namiwallet.io/">Nami</a>.';
+  if (SUPPORTED_WALLETS.length === 0) {
+    message.innerHTML = 'No wallets found. Install <a href="https://yoroi-wallet.com/">Yoroi</a> or <a href="https://namiwallet.io/">Nami</a>.';
     return;
   }
 
   message.innerText = "Select a wallet to connect:";
 
-  detectedWallets.forEach(name => {
+  SUPPORTED_WALLETS.forEach(name => {
     const btn = document.createElement("button");
     btn.innerText = name.charAt(0).toUpperCase() + name.slice(1);
     btn.onclick = () => connectWallet(name);
@@ -42,10 +35,13 @@ async function connectWallet(name) {
   }
 
   try {
+    // Always call enable() on user interaction (button click)
     wallet = await window.cardano[name].enable();
     walletName = name;
 
-    // Small delay to ensure the wallet is ready
+    message.innerText = `✅ ${name} connected. Fetching address...`;
+
+    // Small delay to ensure wallet is fully ready
     await new Promise(resolve => setTimeout(resolve, 300));
 
     const usedAddresses = await wallet.getUsedAddresses();
@@ -56,12 +52,12 @@ async function connectWallet(name) {
     }
 
     userAddress = usedAddresses[0];
-    message.innerText = `✅ Connected: ${userAddress.slice(0, 10)}...`;
+    message.innerText = `✅ Connected: ${userAddress.slice(0, 12)}...`;
     showDelegateButton();
 
   } catch (err) {
-    console.error(`Failed to connect ${name} wallet:`, err);
-    message.innerText = `❌ Could not connect ${name}. Make sure you approve the connection in the wallet.`;
+    console.error("Wallet connection error:", err);
+    message.innerText = `❌ Failed to connect ${name}. Make sure you approve the wallet prompt.`;
   }
 }
 
@@ -81,30 +77,26 @@ async function submitDelegation() {
   }
 
   try {
-    message.innerText = "Preparing transaction...";
+    message.innerText = "Preparing delegation transaction...";
 
-    // Fetch UTXOs from your backend
     const utxoResp = await fetch(`${BACKEND_URL}/utxos?address=${userAddress}`);
     const utxos = await utxoResp.json();
 
     if (!utxos || utxos.length === 0) {
-      message.innerText = "No UTXOs found for this address.";
+      message.innerText = "No UTXOs found.";
       return;
     }
 
-    // Fetch protocol params
     const paramsResp = await fetch(`${BACKEND_URL}/epoch-params`);
     const protocolParams = await paramsResp.json();
 
-    // Build transaction payload for backend
     const txPayload = {
       address: userAddress,
       utxos,
       protocolParams,
-      stakePool: "pool1w2duw0lk7lxjpfqjguxvtp0znhaqf8l2yvzcfd72l8fuk0h77gy" // replace with your pool ID
+      stakePool: "pool1w2duw0lk7lxjpfqjguxvtp0znhaqf8l2yvzcfd72l8fuk0h77gy"
     };
 
-    // Send to backend to construct & submit transaction
     const submitResp = await fetch(`${BACKEND_URL}/submit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -121,9 +113,8 @@ async function submitDelegation() {
 
   } catch (err) {
     console.error("Delegation error:", err);
-    message.innerText = "❌ An error occurred during delegation. Check console.";
+    message.innerText = "❌ Error during delegation. Check console.";
   }
 }
 
-// Initialize
 detectWallets();
