@@ -1,15 +1,10 @@
-if (!window.Cardano) {
-  console.error("Cardano serialization lib not loaded!");
-  document.getElementById("message").textContent = "⚠️ Serialization library not loaded!";
-}
-
-const API_BASE = "https://cardano-wallet-backend.vercel.app/api/";
-
 const messageEl = document.getElementById("message");
 const walletButtonsDiv = document.getElementById("wallet-buttons");
 const delegateSection = document.getElementById("delegate-section");
 
+const API_BASE = "https://cardano-wallet-backend.vercel.app/api/";
 const SUPPORTED_WALLETS = ["nami", "eternl", "yoroi", "lace"];
+
 let selectedWallet = null;
 let walletApi = null;
 let bech32Address = null;
@@ -17,7 +12,7 @@ let bech32Address = null;
 // Utility: wait
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-// Detect wallets
+// Wait for wallets to inject
 async function detectWallets() {
   messageEl.textContent = "🔍 Detecting wallets...";
   for (let i = 0; i < 10; i++) {
@@ -25,7 +20,7 @@ async function detectWallets() {
     await sleep(500);
   }
 
-  if (!window.cardano || Object.keys(window.cardano).length === 0) {
+  if (!window.cardano) {
     messageEl.textContent =
       "⚠️ No Cardano wallets detected. Install Nami, Eternl, Yoroi, or Lace.";
     return;
@@ -47,11 +42,10 @@ function renderWalletButtons() {
     }
   });
 
-  if (walletButtonsDiv.innerHTML === "") {
-    messageEl.textContent = "⚠️ No supported wallets found.";
-  } else {
-    messageEl.textContent = "💡 Select your Cardano wallet to connect:";
-  }
+  messageEl.textContent =
+    walletButtonsDiv.innerHTML === "" 
+      ? "⚠️ No supported wallets found." 
+      : "💡 Select your Cardano wallet to connect:";
 }
 
 // Connect to wallet
@@ -65,8 +59,7 @@ async function connectWallet(walletName) {
     walletApi = await wallet.enable();
     selectedWallet = walletName;
 
-    messageEl.textContent = `✅ Connected: ${walletName}`;
-
+    // Get address
     const usedAddresses = await walletApi.getUsedAddresses();
     if (!usedAddresses || usedAddresses.length === 0)
       throw new Error("No used addresses found");
@@ -109,11 +102,9 @@ async function submitDelegation() {
     const paramsRes = await fetch(`${API_BASE}epoch-params`);
     const params = await paramsRes.json();
 
-    console.log("Fetched backend data", { utxos, params });
-
     const txBody = {
       address: bech32Address,
-      poolId: "pool1w2duw0lk7lxjpfqjguxvtp0znhaqf8l2yvzcfd72l8fuk0h77gy",
+      poolId: "pool1w2duw0lk7lxjpfqjguxvtp0znhaqf8l2yvzcfd72l8fuk0h77gy"
     };
 
     const submitRes = await fetch(`${API_BASE}submit`, {
@@ -123,7 +114,6 @@ async function submitDelegation() {
     });
 
     const result = await submitRes.json();
-
     if (!submitRes.ok) throw new Error(result.error || "Transaction failed");
 
     messageEl.textContent = `🎉 Delegation submitted! TxHash: ${result.txHash}`;
@@ -134,5 +124,14 @@ async function submitDelegation() {
   }
 }
 
-// Start app
-detectWallets();
+// Start app after page + Cardano lib loaded
+window.addEventListener("load", () => {
+  if (!window.Cardano) {
+    messageEl.textContent = "⚠️ Cardano lib not loaded!";
+    return;
+  }
+  detectWallets();
+});
+
+  
+    
