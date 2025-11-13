@@ -104,16 +104,13 @@
   <div class="footer">
     <p>Powered by <a href="https://primestakepool.com/" target="_blank">Prime Stake Pool</a></p>
   </div>
-   <!-- ✅ Correct Emurgo Serialization Library -->
-<script type="module">
-  import * as Cardano from "https://cdn.jsdelivr.net/npm/@emurgo/cardano-serialization-lib-browser@11.2.0/cardano_serialization_lib.js";
-  window.Cardano = Cardano;
-  console.log("✅ Cardano serialization lib loaded:", Cardano);
+    <!-- Cardano Serialization Library (works everywhere) -->
+  <script src="https://unpkg.com/@emurgo/cardano-serialization-lib-browser@11.5.0/cardano_serialization_lib.js"></script>
+  <script>
+    window.Cardano = Module;
+  </script>
 
-  // Wait until loaded before running main.js
-  import("./main.js").then(() => {
-    console.log("✅ main.js loaded after Cardano lib");
-  });
-</script>
+  <!-- Your main logic -->
+  <script type="module" src="main.js"></script>
 </body>
 </html>
