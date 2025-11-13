@@ -1,4 +1,4 @@
-import { Lucid, Provider } from "https://cdn.jsdelivr.net/npm/lucid-cardano@0.10.7/web/mod.js";
+import { Lucid } from "https://cdn.jsdelivr.net/npm/lucid-cardano@0.10.7/web/mod.js";
 
 // 🔹 Your backend root
 const BACKEND_ROOT = "https://wallet-proxy-pi.vercel.app/api/api";
@@ -15,7 +15,7 @@ const delegateSection = document.getElementById("delegate-section");
 //
 // ---- Custom Lucid Provider using your backend ----
 //
-class BackendProvider extends Provider {
+class BackendProvider {
   async getProtocolParameters() {
     const res = await fetch(`${BACKEND_ROOT}/epoch-params`);
     if (!res.ok) throw new Error("Failed to fetch protocol parameters");
