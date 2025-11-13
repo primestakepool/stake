@@ -2,29 +2,17 @@ const messageEl = document.getElementById("message");
 const walletButtonsDiv = document.getElementById("wallet-buttons");
 const delegateSection = document.getElementById("delegate-section");
 
-const API_BASE = "https://cardano-wallet-backend.vercel.app/api/";
 const SUPPORTED_WALLETS = ["nami", "eternl", "yoroi", "lace"];
-
 let selectedWallet = null;
 let walletApi = null;
 let bech32Address = null;
 
-// Utility sleep
+// Wait utility
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-// Wait for Cardano serialization lib to be loaded
-async function waitForCardano() {
-  while (!window.Cardano) {
-    await sleep(100);
-  }
-  console.log("Cardano lib ready!");
-}
-
-// Detect wallets
+// 1️⃣ Detect wallets
 async function detectWallets() {
-  await waitForCardano();
   messageEl.textContent = "🔍 Detecting wallets...";
-  
   for (let i = 0; i < 10; i++) {
     if (window.cardano && Object.keys(window.cardano).length > 0) break;
     await sleep(500);
@@ -38,7 +26,7 @@ async function detectWallets() {
   renderWalletButtons();
 }
 
-// Render wallet buttons
+// 2️⃣ Render wallet buttons
 function renderWalletButtons() {
   walletButtonsDiv.innerHTML = "";
   SUPPORTED_WALLETS.forEach(name => {
@@ -51,16 +39,15 @@ function renderWalletButtons() {
     }
   });
 
-  messageEl.textContent = walletButtonsDiv.innerHTML
-    ? "💡 Select your Cardano wallet to connect:"
-    : "⚠️ No supported wallets found.";
+  messageEl.textContent = walletButtonsDiv.innerHTML ? 
+    "💡 Select your Cardano wallet to connect:" : 
+    "⚠️ No supported wallets found.";
 }
 
-// Connect to wallet
+// 3️⃣ Connect to wallet
 async function connectWallet(walletName) {
   try {
     messageEl.textContent = `🔌 Connecting to ${walletName}...`;
-
     const wallet = window.cardano[walletName];
     if (!wallet) throw new Error(`${walletName} not found`);
 
@@ -70,8 +57,9 @@ async function connectWallet(walletName) {
     const usedAddresses = await walletApi.getUsedAddresses();
     if (!usedAddresses || usedAddresses.length === 0) throw new Error("No used addresses found");
 
-    const addrHex = usedAddresses[0];
-    const addrBytes = Cardano.Address.from_bytes(Buffer.from(addrHex, "hex"));
+    const addrBytes = window.Cardano.Address.from_bytes(
+      Buffer.from(usedAddresses[0], "hex")
+    );
     bech32Address = addrBytes.to_bech32();
 
     messageEl.textContent = `✅ Wallet connected: ${bech32Address.substring(0, 15)}...`;
@@ -84,7 +72,7 @@ async function connectWallet(walletName) {
   }
 }
 
-// Show delegate button
+// 4️⃣ Show delegate button
 function showDelegateButton() {
   delegateSection.innerHTML = "";
   const btn = document.createElement("button");
@@ -94,39 +82,12 @@ function showDelegateButton() {
   delegateSection.appendChild(btn);
 }
 
-// Submit delegation
+// 5️⃣ Submit delegation (calls backend)
 async function submitDelegation() {
-  try {
-    messageEl.textContent = "⏳ Preparing delegation transaction...";
-
-    const utxosRes = await fetch(`${API_BASE}utxos?address=${bech32Address}`);
-    if (!utxosRes.ok) throw new Error(`UTxO fetch failed: ${utxosRes.status}`);
-    const utxos = await utxosRes.json();
-
-    const paramsRes = await fetch(`${API_BASE}epoch-params`);
-    const params = await paramsRes.json();
-
-    const txBody = {
-      address: bech32Address,
-      poolId: "pool1w2duw0lk7lxjpfqjguxvtp0znhaqf8l2yvzcfd72l8fuk0h77gy"
-    };
-
-    const submitRes = await fetch(`${API_BASE}submit`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(txBody),
-    });
-
-    const result = await submitRes.json();
-    if (!submitRes.ok) throw new Error(result.error || "Transaction failed");
-
-    messageEl.textContent = `🎉 Delegation submitted! TxHash: ${result.txHash}`;
-    console.log("Delegation success:", result);
-  } catch (err) {
-    console.error("Delegation error:", err);
-    messageEl.textContent = `❌ Delegation failed: ${err.message}`;
-  }
+  messageEl.textContent = "⏳ Preparing delegation transaction...";
+  // Your backend API call logic here
 }
 
-// Start app
-window.addEventListener("load", () => detectWallets());
+// 6️⃣ Start
+detectWallets();
+
