@@ -1,165 +1,114 @@
-import { Lucid } from "https://cdn.jsdelivr.net/npm/lucid-cardano@0.10.7/web/mod.js";
+// main.js
+const backendBaseUrl = "https://cardano-wallet-backend.vercel.app/api";
 
-// 🔹 Your backend API root
-const BACKEND_ROOT = "https://cardano-wallet-backend.vercel.app/api";
-
-let lucid;
-let wallet;
-let selectedWalletName = "";
-
-// DOM references
-const walletButtonsDiv = document.getElementById("wallet-buttons");
-const message = document.getElementById("message");
+const walletButtonsContainer = document.getElementById("wallet-buttons");
 const delegateSection = document.getElementById("delegate-section");
+const message = document.getElementById("message");
 
-//
-// ---- Custom Lucid provider using your backend ----
-//
-class BackendProvider {
-  async getProtocolParameters() {
-    const res = await fetch(`${BACKEND_ROOT}/epoch-params`);
-    if (!res.ok) throw new Error("Failed to fetch protocol parameters");
+let wallet; // Yoroi wallet instance
+let userAddress; // Bech32 address
 
-    const data = await res.json();
-    // ✅ Validate key fields to avoid .toString() crash
-    if (!data.min_fee_a || !data.min_fee_b || !data.key_deposit) {
-      console.error("Invalid protocol parameters from backend:", data);
-      throw new Error("Invalid protocol parameters received from backend");
-    }
-    return data;
-  }
-
-  async getUtxos(address) {
-    const res = await fetch(`${BACKEND_ROOT}/utxos/${address}`);
-    if (!res.ok) throw new Error("Failed to fetch UTxOs");
-    return res.json();
-  }
-
-  async submitTx(tx) {
-    const res = await fetch(`${BACKEND_ROOT}/submit`, {
-      method: "POST",
-      headers: { "Content-Type": "application/cbor" },
-      body: tx,
-    });
-    if (!res.ok) throw new Error("Failed to submit transaction");
-    return res.text(); // return tx hash
-  }
-}
-
-//
-// ---- Detect wallets and show buttons ----
-//
+// 1️⃣ Detect wallets
 function detectWallets() {
-  if (!window.cardano) {
-    message.textContent =
-      "No Cardano wallets detected. Please install one (Nami, Eternl, Yoroi, Lace).";
-    return;
-  }
+  walletButtonsContainer.innerHTML = ""; // Clear previous buttons
 
-  const wallets = Object.keys(window.cardano).filter(
-    (name) => window.cardano[name]?.enable
-  );
-
-  if (wallets.length === 0) {
-    message.textContent = "No supported wallets detected.";
-    return;
-  }
-
-  message.textContent = "Detected wallets:";
-  walletButtonsDiv.innerHTML = "";
-
-  wallets.forEach((name) => {
+  if (window.cardano?.yoroi) {
     const btn = document.createElement("button");
-    btn.textContent = name.charAt(0).toUpperCase() + name.slice(1);
-    btn.onclick = () => connectWallet(name);
-    walletButtonsDiv.appendChild(btn);
-  });
+    btn.innerText = "Connect Yoroi Wallet";
+    btn.onclick = connectWallet;
+    walletButtonsContainer.appendChild(btn);
+    message.innerText = "Yoroi wallet detected. Connect to continue.";
+  } else {
+    message.innerHTML = 'No Yoroi wallet found. Please install it from <a href="https://yoroi-wallet.com/">here</a>.';
+  }
 }
 
-//
-// ---- Connect selected wallet ----
-//
-async function connectWallet(walletName) {
+// 2️⃣ Connect Yoroi Wallet
+async function connectWallet() {
   try {
-    message.textContent = `🔗 Connecting to ${walletName}...`;
-    wallet = window.cardano[walletName];
-    selectedWalletName = walletName;
+    wallet = await window.cardano.yoroi.enable();
+    const usedAddresses = await wallet.getUsedAddresses();
 
-    await wallet.enable();
-    console.log(`✅ ${walletName} wallet enabled.`);
+    if (!usedAddresses || usedAddresses.length === 0) {
+      message.innerText = "No addresses found in wallet.";
+      return;
+    }
 
-    // 🔹 Fetch protocol parameters first
-    const provider = new BackendProvider();
-    const params = await provider.getProtocolParameters();
-    console.log("Protocol parameters:", params);
-
-    // 🔹 Initialize Lucid safely
-    lucid = await Lucid.new(provider, "Mainnet");
-    lucid.selectWallet(wallet);
-
-    // 🔹 Get and log user address
-    const usedAddresses = await lucid.wallet.addresses();
-    const address = usedAddresses[0];
-    console.log("Connected address:", address);
-
-    message.textContent = `✅ Connected to ${walletName}`;
+    userAddress = usedAddresses[0]; // Using the first used address
+    message.innerText = `✅ Wallet connected: ${userAddress.slice(0, 10)}...`;
     showDelegateButton();
   } catch (err) {
-    console.error("Connect wallet error:", err);
-    message.textContent = `❌ Connection failed: ${err.message}`;
+    console.error(err);
+    message.innerText = "❌ Failed to connect wallet: " + err.message;
   }
 }
 
-//
-// ---- Show Delegate button ----
-//
+// 3️⃣ Show delegate button
 function showDelegateButton() {
   delegateSection.innerHTML = "";
 
-  const delegateBtn = document.createElement("button");
-  delegateBtn.className = "delegate-btn";
-  delegateBtn.textContent = "Delegate ADA";
+  const btn = document.createElement("button");
+  btn.className = "delegate-btn";
+  btn.innerText = "Fetch My UTXOs";
+  btn.onclick = fetchUtxos;
+  delegateSection.appendChild(btn);
+}
 
-  delegateBtn.onclick = async () => {
-    const poolId = prompt("Enter pool ID to delegate to:");
-    if (!poolId) return;
+// 4️⃣ Fetch UTXOs via backend
+async function fetchUtxos() {
+  if (!userAddress) {
+    message.innerText = "⚠️ Connect wallet first.";
+    return;
+  }
 
-    try {
-      await delegateToPool(poolId);
-      alert("Delegation submitted!");
-    } catch (err) {
-      console.error("Delegation error:", err);
-      alert("Delegation failed: " + err.message);
+  message.innerText = "Fetching UTXOs...";
+  try {
+    const res = await fetch(`${backendBaseUrl}/utxos/${userAddress}`);
+    const utxos = await res.json();
+
+    console.log("UTXOs:", utxos);
+    message.innerText = `✅ UTXOs fetched: ${utxos.length} found.`;
+    
+    // Optionally, show a submit transaction button
+    showSubmitButton(utxos);
+  } catch (err) {
+    console.error(err);
+    message.innerText = "❌ Failed to fetch UTXOs: " + err.message;
+  }
+}
+
+// 5️⃣ Show submit transaction button
+function showSubmitButton(utxos) {
+  const btn = document.createElement("button");
+  btn.className = "delegate-btn";
+  btn.innerText = "Submit Dummy Transaction";
+  btn.onclick = async () => {
+    const txCborHex = prompt("Enter transaction CBOR hex (for testing):");
+    if (txCborHex) {
+      await submitTx(txCborHex);
     }
   };
 
-  delegateSection.appendChild(delegateBtn);
+  delegateSection.appendChild(btn);
 }
 
-//
-// ---- Delegate ADA ----
-//
-async function delegateToPool(poolId) {
-  if (!lucid) throw new Error("Wallet not connected");
+// 6️⃣ Submit transaction via backend
+async function submitTx(txCborHex) {
+  try {
+    const res = await fetch(`${backendBaseUrl}/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ txCbor: txCborHex })
+    });
 
-  const address = (await lucid.wallet.addresses())[0];
-  console.log("Delegating from address:", address);
-  console.log("Pool ID:", poolId);
-
-  // 🔹 Build and submit delegation transaction
-  const tx = await lucid
-    .newTx()
-    .delegateTo(address, poolId)
-    .complete();
-
-  const signedTx = await tx.sign().complete();
-  const txHash = await signedTx.submit();
-
-  console.log("Delegation submitted, tx hash:", txHash);
-  message.textContent = `✅ Delegation submitted! TX hash: ${txHash}`;
+    const result = await res.json();
+    console.log("Transaction submission result:", result);
+    message.innerText = `✅ Transaction submitted. Tx ID: ${result.txId || "unknown"}`;
+  } catch (err) {
+    console.error(err);
+    message.innerText = "❌ Failed to submit transaction: " + err.message;
+  }
 }
 
-//
-// ---- Initialize ----
-//
+// Initialize
 detectWallets();
