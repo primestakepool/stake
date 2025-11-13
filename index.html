@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://unpkg.com/@emurgo/cardano-serialization-lib-browser@15.0.1/cardano_serialization_lib.min.js"></script>
+<script>
+  window.Cardano = Cardano;
+  console.log("Cardano serialization lib loaded:", Cardano);
+</script>
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <meta charset="UTF-8">
   <title>Cardano Staking</title>
@@ -105,12 +110,7 @@
     <p>Powered by <a href="https://primestakepool.com/" target="_blank">Prime Stake Pool</a></p>
   </div>
     <!-- Cardano Serialization Library (works everywhere) -->
-    <script src="https://unpkg.com/@emurgo/cardano-serialization-lib-browser@15.0.1/cardano_serialization_lib.min.js"></script>
-<script>
-  window.Cardano = Cardano;
-  console.log("Cardano serialization lib loaded:", Cardano);
-</script>
-
+    
   <!-- Your main logic -->
   <script type="module" src="main.js"></script>
 </body>
