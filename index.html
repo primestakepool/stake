@@ -105,7 +105,10 @@
     <p>Powered by <a href="https://primestakepool.com/" target="_blank">Prime Stake Pool</a></p>
   </div>
     <!-- Cardano Serialization Library (works everywhere) -->
-    <script src="https://unpkg.com/@emurgo/cardano-serialization-lib-browser@11.5.0/cardano_serialization_lib.js"></script>
+    <script type="module">
+  import * as Cardano from "https://unpkg.com/@emurgo/cardano-serialization-lib-browser@11.5.0/cardano_serialization_lib.js";
+  window.Cardano = Cardano;
+</script>
 
   <!-- Your main logic -->
   <script type="module" src="main.js"></script>
