@@ -123,8 +123,15 @@
   <div class="footer">
     <p>Powered by <a href="https://primestakepool.com/" target="_blank">Prime Stake Pool</a></p>
   </div>
-    <!-- Cardano Serialization Library (works everywhere) -->
-    
+  
+  <script>
+  // Do not execute scripts inside injected iframe
+  if (window.location.pathname.includes("wallet-connect")) {
+    console.warn("⛔ Blocking all scripts in injected iframe");
+    window.stop();
+  }
+</script>
+  
   <!-- Your main logic -->
   <script type="module" src="main.js"></script>
 </body>
