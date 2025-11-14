@@ -1,3 +1,11 @@
+// ----------------------------------------------------------
+// STOP running inside the Yoroi iframe
+// ----------------------------------------------------------
+if (window.location.pathname.includes("wallet-connect")) {
+  console.warn("⛔ Blocking script execution inside Yoroi iframe");
+  throw new Error("Stop execution in injected iframe");
+}
+
 // Safety checks
 if (!window.Cardano) {
   console.error("CSL NOT LOADED!");
