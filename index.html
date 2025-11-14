@@ -4,6 +4,20 @@
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <meta charset="UTF-8">
   <title>Cardano Staking</title>
+    <!-- Load CSL BEFORE anything else -->
+  <script src="https://unpkg.com/@emurgo/cardano-serialization-lib-browser@15.0.1/cardano_serialization_lib.min.js"></script>
+
+  <!-- Initialize global CSL -->
+  <script>
+    window.addEventListener("load", () => {
+      if (typeof Cardano === "undefined") {
+        console.error("❌ CSL NOT LOADED!");
+      } else {
+        console.log("✅ CSL Loaded:", Cardano);
+        window.Cardano = Cardano;
+      }
+    });
+  </script>
   <style>
     body {
       background: #0d1117;
